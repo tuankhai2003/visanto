@@ -21,11 +21,20 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // 2. Biên dịch mẫu Handlebars từ templates.html
-    const cardTemplateSource = document.getElementById('pest-card-template').innerHTML;
-    const modalTemplateSource = document.getElementById('pest-modal-template').innerHTML;
-    const pestCardTemplate = Handlebars.compile(cardTemplateSource);
-    const pestModalTemplate = Handlebars.compile(modalTemplateSource);
+    // Đảm bảo các mẫu đã được tải trước khi biên dịch
+    let pestCardTemplate, pestModalTemplate;
+    
+    // Thêm kiểm tra an toàn để đảm bảo thẻ script đã tồn tại
+    const cardTemplateSource = document.getElementById('pest-card-template');
+    const modalTemplateSource = document.getElementById('pest-modal-template');
 
+    if (cardTemplateSource && modalTemplateSource) {
+        pestCardTemplate = Handlebars.compile(cardTemplateSource.innerHTML);
+        pestModalTemplate = Handlebars.compile(modalTemplateSource.innerHTML);
+    } else {
+        console.error("Handlebars templates not found in the DOM. Check templates.html file.");
+    }
+    
     // 3. Logic chung cho chuyển tab
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -39,11 +48,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     section.classList.remove('active');
                 }
             });
+            // Gọi lại hàm render khi chuyển tab để đảm bảo nội dung được tải
+            if (target === 'program') {
+                renderTimeline();
+            } else if (target === 'diagnostics') {
+                renderPests();
+            }
         });
     });
 
-    // 4. Logic cho phần Quy trình Canh tác (không dùng Handlebars vì nội dung đã là chuỗi HTML)
-    if (timelineNav) {
+    // 4. Logic cho phần Quy trình Canh tác
+    function renderTimeline() {
+        if (!timelineNav || !timelineContent) return;
+        timelineNav.innerHTML = ''; // Dọn dẹp nội dung cũ
+        
         Object.keys(timelineData).forEach((key, index) => {
             const data = timelineData[key];
             const button = document.createElement('button');
@@ -57,21 +75,27 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             timelineNav.appendChild(button);
         });
-        if (timelineContent) timelineContent.innerHTML = timelineData[Object.keys(timelineData)[0]].content;
+        
+        // Hiển thị nội dung của tab đầu tiên
+        if (Object.keys(timelineData).length > 0) {
+            const firstKey = Object.keys(timelineData)[0];
+            timelineContent.innerHTML = timelineData[firstKey].content;
+        }
     }
 
     // 5. Logic cho phần Chẩn đoán & Giải pháp (sử dụng Handlebars)
-    if (pestStageFilter) {
-        Object.keys(stageNames).forEach(key => {
-            pestStageFilter.add(new Option(stageNames[key], key));
-        });
-    }
-
     function renderPests() {
         if (!pestGrid || !pestTypeFilter || !pestStageFilter) return;
+        
+        // Đảm bảo bộ lọc giai đoạn đã được tạo
+        if (pestStageFilter.options.length <= 1) {
+            Object.keys(stageNames).forEach(key => {
+                pestStageFilter.add(new Option(stageNames[key], key));
+            });
+        }
+        
         const type = pestTypeFilter.value;
         const stage = pestStageFilter.value;
-
         const filteredPests = pestData.filter(pest => (type === 'all' || pest.type === type) && (stage === 'all' || pest.stage === stage));
 
         if (filteredPests.length === 0) {
@@ -79,14 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Tạo HTML bằng Handlebars và chèn vào DOM
         const htmlCards = filteredPests.map(pest => {
             const data = { ...pest, stageName: stageNames[pest.stage] };
             return pestCardTemplate(data);
         });
         pestGrid.innerHTML = htmlCards.join('');
 
-        // Thêm event listener cho các thẻ mới
         document.querySelectorAll('[data-pest-id]').forEach(card => {
             card.addEventListener('click', () => {
                 const pestId = parseInt(card.dataset.pestId);
@@ -98,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function showPestDetail(pest) {
         if (!modalBody || !modal) return;
-        // Sử dụng Handlebars để tạo nội dung modal và chèn vào DOM
         modalBody.innerHTML = pestModalTemplate(pest);
         modal.style.display = 'block';
     }
@@ -109,8 +130,10 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('click', (event) => { if (event.target == modal) modal.style.display = 'none'; });
 
     // 6. Chạy các hàm render ban đầu
-    renderPests();
-    if (document.querySelector('[data-tab="principles"]')) {
+    const initialTab = document.querySelector('.nav-tab.tab-active');
+    if (initialTab) {
+        initialTab.click();
+    } else {
         document.querySelector('[data-tab="principles"]').click();
     }
 });
