@@ -21,10 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // 2. Biên dịch mẫu Handlebars từ templates.html
-    // Đảm bảo các mẫu đã được tải trước khi biên dịch
     let pestCardTemplate, pestModalTemplate;
     
-    // Thêm kiểm tra an toàn để đảm bảo thẻ script đã tồn tại
     const cardTemplateSource = document.getElementById('pest-card-template');
     const modalTemplateSource = document.getElementById('pest-modal-template');
 
@@ -48,7 +46,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     section.classList.remove('active');
                 }
             });
-            // Gọi lại hàm render khi chuyển tab để đảm bảo nội dung được tải
             if (target === 'program') {
                 renderTimeline();
             } else if (target === 'diagnostics') {
@@ -60,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // 4. Logic cho phần Quy trình Canh tác
     function renderTimeline() {
         if (!timelineNav || !timelineContent) return;
-        timelineNav.innerHTML = ''; // Dọn dẹp nội dung cũ
+        timelineNav.innerHTML = '';
         
         Object.keys(timelineData).forEach((key, index) => {
             const data = timelineData[key];
@@ -76,7 +73,6 @@ document.addEventListener('DOMContentLoaded', function () {
             timelineNav.appendChild(button);
         });
         
-        // Hiển thị nội dung của tab đầu tiên
         if (Object.keys(timelineData).length > 0) {
             const firstKey = Object.keys(timelineData)[0];
             timelineContent.innerHTML = timelineData[firstKey].content;
@@ -87,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderPests() {
         if (!pestGrid || !pestTypeFilter || !pestStageFilter) return;
         
-        // Đảm bảo bộ lọc giai đoạn đã được tạo
         if (pestStageFilter.options.length <= 1) {
             Object.keys(stageNames).forEach(key => {
                 pestStageFilter.add(new Option(stageNames[key], key));
